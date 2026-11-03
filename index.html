@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Interactive 3D telecom city: from laptop to data center, with a radio-link lab. شبیه‌ساز تعاملی شبکه‌ی مخابرات.">
+  <title>شهر مخابراتی تهران · Mokhaberat</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <canvas id="stage" aria-label="3D city"></canvas>
+  <div id="labels"></div>
+
+  <header class="bar">
+    <div class="brand">
+      <h1 data-i18n="title">شهر مخابراتی تهران</h1>
+      <p data-i18n="subtitle"></p>
+    </div>
+    <div class="actions">
+      <button type="button" id="btnHome" class="ghost" data-i18n-label="units" aria-label="Home">⌂</button>
+      <button type="button" id="btnTrace" class="primary" aria-pressed="false" data-i18n="trace"></button>
+      <button type="button" id="btnRadio" class="signal" data-i18n="radio"></button>
+      <button type="button" id="btnLang" class="ghost" lang="en">English</button>
+    </div>
+  </header>
+
+  <p class="hint" data-i18n="hint"></p>
+
+  <div id="traceBar" class="tracebar" role="status" aria-live="polite" hidden>
+    <span id="traceStep" class="ts"></span>
+    <strong id="traceUnit"></strong>
+    <span id="traceText"></span>
+    <button type="button" id="traceStop" data-i18n="traceStop"></button>
+  </div>
+
+  <nav id="chips" class="chips" aria-label="units"></nav>
+
+  <aside id="panel" class="panel" hidden aria-live="polite">
+    <button type="button" id="pClose" class="x" data-i18n-label="close" aria-label="Close">×</button>
+    <p id="pCat" class="cat"></p>
+    <h2 id="pName"></h2>
+    <figure class="anim">
+      <canvas id="pCanvas" width="480" height="270"></canvas>
+      <figcaption id="pAnimCap"></figcaption>
+    </figure>
+    <h3 data-i18n="function"></h3>
+    <p id="pDesc" class="desc"></p>
+    <h3 data-i18n="specs"></h3>
+    <dl id="pSpecs"></dl>
+    <h3 data-i18n="models"></h3>
+    <ul id="pModels"></ul>
+    <p class="fine" data-i18n="modelsNote"></p>
+    <button type="button" id="btnOpenRadio" class="signal wide" data-i18n="openRadio" hidden></button>
+    <p class="fine" data-i18n="eduNote"></p>
+  </aside>
+
+  <section id="lab" class="lab" hidden></section>
+  <div id="loading" class="loading" data-i18n="loading">در حال ساخت شهر…</div>
+
+  <script src="js/i18n.js"></script>
+  <script src="js/units.js"></script>
+  <script src="js/radio-core.js"></script>
+  <script src="js/anim.js"></script>
+  <script src="js/radio.js"></script>
+  <script src="js/loader.js"></script>
+</body>
+</html>
