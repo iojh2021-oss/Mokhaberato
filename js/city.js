@@ -14,7 +14,7 @@
   const COL = {
     cream: 0xEDE3CC, beige: 0xD9CDB4, beige2: 0xC8BA9A, glass: 0x5A7DB0, glassD: 0x2F4670, wood: 0xD7995B,
     green: 0x6AA45E, green2: 0x3F7A4A, road: 0xAEB7C6, orange: 0xE8602C, white: 0xF6F3EC, steel: 0x8E9BAE,
-    steelD: 0x5A667A, teal: 0x14909F, snow: 0xF2F0FA, rock: 0x5C6AA0, rock2: 0x7C86B5, dark: 0x26324A, yellow: 0xF2B84B
+    steelD: 0x5A667A, teal: 0x14909F, snow: 0xF2F0FA, rock: 0x5C6AA0, rock2: 0x7C86B5, dark: 0x26324A, yellow: 0xF2B84B, amber: 0xC98F10, volt: 0xFFD23F, gravel: 0xB9B3A3
   };
   const matCache = {};
   function M(color, kind) {
@@ -73,6 +73,7 @@
   const blinkers = [];
   const spinners = [];
   let skySat, selected = null, hovered = null;
+  const hl = new Set();
 
   function registerUnit(id, group, anchorY, ringR) {
     group.userData.unit = id; scene.add(group); pickRoots.push(group);
@@ -236,16 +237,133 @@
     return g;
   }
 
+  // ---------- power system (generation → transmission → distribution → telecom sites) ----------
+  const plumes = [];
+  function pylon(x, z) {
+    const g = new T.Group(); g.position.set(x, 0, z);
+    const lat = new T.Mesh(new T.CylinderGeometry(0.25, 1.1, 9, 4, 5, true), new T.MeshBasicMaterial({ color: COL.steelD, wireframe: true }));
+    lat.position.y = 4.5; lat.rotation.y = Math.PI / 4; g.add(lat);
+    [6.3, 7.4, 8.5].forEach((y) => box(3, 0.12, 0.12, COL.steelD, 0, y - 0.06, 0, g));
+    return g;
+  }
+  function buildPlant() {
+    const g = new T.Group(); g.position.set(31, 0, -11);
+    box(8, 3.4, 3.6, COL.beige, -1, 0, -1.2, g); box(8.2, 0.3, 3.8, COL.steel, -1, 3.4, -1.2, g);
+    box(7.4, 0.9, 0.08, COL.glassD, -1, 1.5, 0.62, g);
+    box(2, 2.6, 2, COL.steel, -5.6, 0, -1.2, g);                            // gas-turbine air intake
+    [-2.4, 0.6].forEach((z) => {                                           // heat-recovery boilers + stacks
+      box(2.2, 5.2, 2.2, COL.steelD, 4, 0, z, g); cyl(0.5, 0.65, 11, COL.white, 4, 5.2, z, g, 16); cyl(0.52, 0.52, 0.5, COL.orange, 4, 14.6, z, g, 16);
+      plumes.push({ m: new T.Mesh(new T.SphereGeometry(0.5, 8, 6), new T.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.4, depthWrite: false })), base: V(4, 16.3, z), off: Math.random(), g: g });
+    });
+    box(3, 2.4, 2.4, COL.beige2, 0.5, 0, 3.2, g);                           // steam-turbine hall
+    const pts = []; for (let i = 0; i <= 10; i++) pts.push(new T.Vector2(2.2 - 0.9 * Math.sin(Math.PI * i / 10), i * 0.8));
+    const tower = new T.Mesh(new T.LatheGeometry(pts, 28), new T.MeshLambertMaterial({ color: COL.white, side: T.DoubleSide })); tower.position.set(-5, 0, 4.8); g.add(tower);
+    plumes.push({ m: new T.Mesh(new T.SphereGeometry(0.9, 8, 6), new T.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.4, depthWrite: false })), base: V(-5, 8.4, 4.8), off: 0.3, g: g });
+    box(2, 1.8, 1.4, COL.steelD, -3, 0, 5.4, g);                            // step-up transformer
+    for (let i = 0; i < 3; i++) cyl(0.1, 0.1, 0.9, COL.white, -3.6 + i * 0.6, 1.8, 5.4, g, 8);
+    [-3.8, -2.2].forEach((x) => cyl(0.12, 0.12, 5.2, COL.steel, x, 0, 6.2, g, 8)); box(2.2, 0.16, 0.16, COL.steel, -3, 5.2, 6.2, g);
+    for (let i = 0; i < 5; i++) blinkers.push({ m: led(-4.5 + i * 1.8, 3.7, 0.7, COL.yellow, g), ph: i });
+    plumes.forEach((p) => { if (p.g === g) g.add(p.m); });
+    return g;
+  }
+  function buildHvSub() {
+    const g = new T.Group(); g.position.set(31, 0, 4.5);
+    box(9, 0.06, 8, COL.gravel, 0, 0, 0, g);
+    for (let i = 0; i < 3; i++) {
+      const x = -3 + i * 3;
+      box(2, 2.2, 1.6, COL.steelD, x, 0.06, 0.8, g); box(0.5, 1.7, 1.3, COL.steel, x + 1.25, 0.2, 0.8, g);
+      for (let j = 0; j < 3; j++) cyl(0.1, 0.1, 0.9, COL.white, x - 0.6 + j * 0.6, 2.26, 0.8, g, 8);
+      cyl(0.18, 0.18, 1.4, COL.white, x, 0.06, -1.6, g, 10);                // circuit breaker
+    }
+    [-4, 0, 4].forEach((x) => cyl(0.12, 0.12, 5.5, COL.steel, x, 0, -3.2, g, 8)); box(8.4, 0.18, 0.18, COL.steel, 0, 5.5, -3.2, g);
+    cyl(0.12, 0.12, 5.5, COL.steel, -4.4, 0, 4.5, g, 8); box(0.18, 0.18, 2, COL.steel, -4.4, 5.5, 4.5, g);
+    box(2.4, 1.6, 2, COL.beige, 3.2, 0, 3.0, g);                           // control building
+    for (let i = 0; i < 4; i++) blinkers.push({ m: led(2.4 + i * 0.5, 1.2, 4.02, COL.teal, g), ph: i * 1.2 });
+    return g;
+  }
+  function buildDistSub() {
+    const g = new T.Group(); g.position.set(18.5, 0, 13.5);
+    box(5, 0.06, 5, COL.gravel, 0, 0, 0, g);
+    box(1.8, 1.8, 1.4, COL.steelD, -0.9, 0.06, 0.3, g); for (let j = 0; j < 3; j++) cyl(0.09, 0.09, 0.8, COL.white, -1.4 + j * 0.5, 1.86, 0.3, g, 8);
+    box(2, 1.8, 3, COL.beige, 1.4, 0, 0, g);
+    cyl(0.12, 0.12, 5, COL.steel, 2.6, 0, -1.5, g, 8); box(0.16, 0.16, 1.6, COL.steel, 2.6, 5, -1.5, g);
+    cyl(0.09, 0.12, 5, COL.wood, -3.2, 0, -2.4, g, 6); box(1.6, 0.1, 0.1, COL.wood, -3.2, 4.6, -2.4, g); cyl(0.32, 0.32, 0.8, COL.steelD, -3.2, 3.6, -2.4, g, 12);
+    for (let i = 0; i < 3; i++) blinkers.push({ m: led(0.8 + i * 0.5, 1.2, 1.52, COL.yellow, g), ph: i * 2 });
+    return g;
+  }
+  function buildSolar() {
+    const g = new T.Group(); g.position.set(31, 0, 14);
+    for (let r = 0; r < 2; r++) for (let c = 0; c < 4; c++) {
+      const p = box(2.2, 0.1, 1.3, COL.glassD, -3.75 + c * 2.5, 0, -1.4 + r * 2.4, g); p.position.y = 1.0; p.rotation.x = -0.5;
+      cyl(0.06, 0.06, 0.9, COL.steel, p.position.x, 0, p.position.z, g, 6);
+    }
+    box(1.4, 1.2, 1, COL.white, -4.6, 0, 2.6, g);                          // inverter
+    cyl(0.15, 0.3, 8, COL.white, 4.3, 0, -4.8, g, 10); box(0.5, 0.5, 1, COL.white, 4.3, 8, -4.8, g);
+    const rotor = new T.Group(); rotor.position.set(4.3, 8.25, -4.2);
+    for (let i = 0; i < 3; i++) { const b = box(0.2, 3.4, 0.05, COL.white, 0, 0, 0, rotor); b.position.y = 1.7; const pv = new T.Group(); pv.rotation.z = i * TAU / 3; pv.add(b); rotor.add(pv); }
+    g.add(rotor); spinners.push(Object.assign(rotor, { zspin: true }));
+    return g;
+  }
+  function buildSitePower() {
+    const g = new T.Group(); g.position.set(12, 0, 12);
+    box(3.4, 2.2, 2.2, 0x6E86A8, 0, 0, 0, g); box(0.9, 1.6, 0.08, COL.steelD, -0.8, 0, 1.12, g);
+    for (let i = 0; i < 2; i++) { const p = box(1.4, 0.08, 0.9, COL.glassD, -0.8 + i * 1.6, 2.2, 0, g); p.rotation.x = -0.4; }
+    box(2, 1.3, 1.2, COL.orange, 3.2, 0, 0, g); cyl(0.12, 0.12, 2.2, COL.dark, 3.8, 1.3, -0.3, g, 8);
+    const tank = cyl(0.45, 0.45, 1.8, COL.steel, 3.2, 0, 1.7, g, 14); tank.rotation.z = Math.PI / 2; tank.position.y = 0.5;
+    cyl(0.09, 0.12, 5, COL.wood, -3, 0, -1.2, g, 6); box(1.4, 0.1, 0.1, COL.wood, -3, 4.6, -1.2, g); cyl(0.3, 0.3, 0.7, COL.steelD, -3, 3.6, -1.2, g, 12);
+    for (let i = 0; i < 3; i++) blinkers.push({ m: led(0.6 + i * 0.5, 1.9, 1.14, COL.teal, g), ph: i * 1.7 });
+    return g;
+  }
+
+  // overhead lines: nodes are {x,z,y0,dy}; three conductors at y0, y0+dy, y0+2·dy
+  const powerPaths = {};
+  function overhead(nodes, id) {
+    const mid = [];
+    for (let k = 0; k < 3; k++) {
+      const pts = [];
+      for (let i = 1; i < nodes.length; i++) {
+        const a = nodes[i - 1], b = nodes[i];
+        arcPoints(V(a.x, a.y0 + k * a.dy, a.z), V(b.x, b.y0 + k * b.dy, b.z), -0.5, 10).forEach((p, j) => { if (!(i > 1 && j === 0)) pts.push(p); });
+      }
+      const line = new T.Line(new T.BufferGeometry().setFromPoints(pts), new T.LineBasicMaterial({ color: 0x24324B })); scene.add(line);
+      if (k === 1) mid.push(pts);
+    }
+    powerPaths[id] = mid[0]; addFlow(new Path(mid[0]), COL.volt, 1, 8, 0.3);
+  }
+  function definePower() {
+    const y = 0.3, net = new T.Group(); net.userData.unit = 'distsub'; scene.add(net); pickRoots.push(net);
+    const P2 = {
+      dsSit: [V(16, y, 13.6), V(13.8, y, 12.4)],
+      dsCell: [V(19.8, y, 11), V(19.8, y, 3.4), V(18.6, y, 2.7)],
+      dsEx: [V(17.4, y, 11), V(17.4, y, 7.2), V(6.2, y, 7.2), V(6.2, y, 2.5)],
+      exDc: [V(6.8, y, -2.5), V(6.8, y, -8.2), V(-12.2, y, -8.2), V(-12.2, y, -8.0)],
+      solDs: [V(27, y, 13.4), V(23.4, y, 13.4), V(21.2, y, 13.6)]
+    };
+    Object.keys(P2).forEach((k) => {
+      const pts = P2[k]; powerPaths[k] = pts;
+      for (let i = 1; i < pts.length; i++) {
+        const a = pts[i - 1], b = pts[i], len = a.distanceTo(b);
+        const s = new T.Mesh(new T.BoxGeometry(len + 0.2, 0.12, 0.26), M(COL.amber)); s.position.copy(a).add(b).multiplyScalar(0.5); s.rotation.y = -Math.atan2(b.z - a.z, b.x - a.x); net.add(s);
+        const hit = new T.Mesh(new T.BoxGeometry(len + 0.4, 1, 1.4), new T.MeshBasicMaterial({ visible: false })); hit.position.copy(s.position); hit.rotation.copy(s.rotation); net.add(hit);
+      }
+      addFlow(new Path(pts), COL.volt, 1, 5, 0.26);
+    });
+    const hv = new T.Group(); hv.userData.unit = 'hvsub'; scene.add(hv); pickRoots.push(hv);
+    [[31, -3.2], [24.2, 6.4], [22.8, 9.4]].forEach((p) => hv.add(pylon(p[0], p[1])));
+    overhead([{ x: 31, z: -6.2, y0: 5.2, dy: 0.25 }, { x: 31, z: -3.2, y0: 6.3, dy: 1.1 }, { x: 31, z: 1.3, y0: 5.2, dy: 0.25 }], 'ov1');
+    overhead([{ x: 26.6, z: 4.5, y0: 5.2, dy: 0.25 }, { x: 24.2, z: 6.4, y0: 6.3, dy: 1.1 }, { x: 22.8, z: 9.4, y0: 6.3, dy: 1.1 }, { x: 21.1, z: 12, y0: 5, dy: 0.2 }], 'ov2');
+  }
+
   // ---------- environment ----------
   function buildGround() {
     const side = M(COL.wood), top = M(COL.cream);
-    const plat = new T.Mesh(new T.BoxGeometry(46, 1.4, 38), [side, side, top, side, side, side]);
-    plat.position.y = -0.7; scene.add(plat);
-    [-6, 6].forEach((z) => box(46, 0.05, 1.8, COL.road, 0, 0, z, scene));
-    [-8, 8].forEach((x) => box(1.8, 0.05, 38, COL.road, x, 0, 0, scene));
+    const plat = new T.Mesh(new T.BoxGeometry(60, 1.4, 38), [side, side, top, side, side, side]);
+    plat.position.set(7, -0.7, 0); scene.add(plat);
+    [-6, 6].forEach((z) => box(60, 0.05, 1.8, COL.road, 7, 0, z, scene));
+    [-8, 8, 24].forEach((x) => box(1.8, 0.05, 38, COL.road, x, 0, 0, scene));
     const dash = M(COL.white);
-    for (let x = -22; x < 22; x += 2.4) [-6, 6].forEach((z) => { const m = new T.Mesh(new T.BoxGeometry(1, 0.02, 0.08), dash); m.position.set(x, 0.06, z); scene.add(m); });
-    for (let z = -18; z < 18; z += 2.4) [-8, 8].forEach((x) => { const m = new T.Mesh(new T.BoxGeometry(0.08, 0.02, 1), dash); m.position.set(x, 0.06, z); scene.add(m); });
+    for (let x = -22; x < 36; x += 2.4) [-6, 6].forEach((z) => { const m = new T.Mesh(new T.BoxGeometry(1, 0.02, 0.08), dash); m.position.set(x, 0.06, z); scene.add(m); });
+    for (let z = -18; z < 18; z += 2.4) [-8, 8, 24].forEach((x) => { const m = new T.Mesh(new T.BoxGeometry(0.08, 0.02, 1), dash); m.position.set(x, 0.06, z); scene.add(m); });
   }
   function buildMountains() {
     function peak(x, z, R, H, snowFrac) {
@@ -262,9 +380,11 @@
     peak(25, -32, 13, 10, 0.2);
     peak(-34, -22, 9, 6, 0);
     peak(35, -22, 9, 6.5, 0);
+    peak(41, -30, 12, 8.5, 0.16);
+    peak(46, -16, 8, 5.5, 0);
   }
   function buildFillers() {
-    const avoid = [[-13, -11, 6.2], [-19, -15, 5.2], [-3, -12, 4.8], [5, -14, 4.4], [16, -11, 4.8], [0, 0, 7.4], [15, 0, 5], [-14, 9, 7.6], [0, 12, 5.6], [-8, -6, 2.6]];
+    const avoid = [[-13, -11, 6.2], [-19, -15, 5.2], [-3, -12, 4.8], [5, -14, 4.4], [16, -11, 4.8], [0, 0, 7.4], [15, 0, 5], [-14, 9, 7.6], [0, 12, 5.6], [-8, -6, 2.6], [18.5, 13.5, 5], [12, 12, 4]];
     const r = rng(2024), step = 4.4;
     for (let x = -20.5; x < 22; x += step) for (let z = -16.5; z < 19; z += step) {
       if (Math.abs(x + 8) < 2.3 || Math.abs(x - 8) < 2.3 || Math.abs(z + 6) < 2.3 || Math.abs(z - 6) < 2.3) continue;
@@ -322,6 +442,7 @@
     wireless(V(16, 11.6, -11), V(15, 10.4, 0), 3);
     wireless(V(15.8, 11, -11), V(0.5, 9.6, 0), 5);
     wireless(V(-18.2, 3.9, -15.6), V(-17, 25.5, -22), 0);
+    definePower();
   }
   function wireless(a, b, lift) {
     const pts = arcPoints(a, b, lift, 28), geo = new T.BufferGeometry().setFromPoints(pts);
@@ -338,13 +459,17 @@
   }
 
   // ---------- camera ----------
-  const cam = { theta: 0.72, phi: 1.0, r: 72, target: V(0, 1, 0), gTarget: V(0, 1, 0), gR: 72 };
+  const cam = { theta: 0.72, phi: 1.0, r: 84, target: V(7, 1, 0), gTarget: V(7, 1, 0), gR: 84, ix: 0, iy: 0, gix: 0, giy: 0 };
   function updateCamera(dt) {
     const k = 1 - Math.exp(-dt * 5);
     cam.target.lerp(cam.gTarget, k); cam.r += (cam.gR - cam.r) * k;
     const s = Math.sin(cam.phi);
     camera.position.set(cam.target.x + cam.r * s * Math.sin(cam.theta), cam.target.y + cam.r * Math.cos(cam.phi), cam.target.z + cam.r * s * Math.cos(cam.theta));
-    camera.lookAt(cam.target);
+    camera.lookAt(cam.target); camera.updateMatrixWorld();
+    cam.ix += (cam.gix - cam.ix) * k; cam.iy += (cam.giy - cam.iy) * k;
+    const w = canvas.clientWidth, h = canvas.clientHeight;
+    if (w && h && (Math.abs(cam.ix) > 1e-3 || Math.abs(cam.iy) > 1e-3)) camera.setViewOffset(w, h, -cam.ix * w, cam.iy * h, w, h);
+    else if (camera.view && camera.view.enabled) camera.clearViewOffset();
   }
   function bindInput() {
     const ptrs = new Map(); let moved = 0, downAt = null, pinch0 = 0, pinchR0 = 0;
@@ -359,7 +484,7 @@
       const dx = e.clientX - p.x, dy = e.clientY - p.y; moved += Math.abs(dx) + Math.abs(dy);
       if (ptrs.size === 2) {
         p.x = e.clientX; p.y = e.clientY; const [a, b] = [...ptrs.values()]; const d = Math.hypot(a.x - b.x, a.y - b.y);
-        if (pinch0 > 0) cam.gR = clamp(pinchR0 * pinch0 / d, 14, 140);
+        if (pinch0 > 0) cam.gR = clamp(pinchR0 * pinch0 / d, 14, 150);
         return;
       }
       p.x = e.clientX; p.y = e.clientY;
@@ -372,7 +497,7 @@
       pinch0 = 0;
     };
     canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', (e) => { ptrs.delete(e.pointerId); });
-    canvas.addEventListener('wheel', (e) => { e.preventDefault(); cam.gR = clamp(cam.gR * Math.exp(e.deltaY * 0.0012), 14, 140); }, { passive: false });
+    canvas.addEventListener('wheel', (e) => { e.preventDefault(); cam.gR = clamp(cam.gR * Math.exp(e.deltaY * 0.0012), 14, 150); }, { passive: false });
     canvas.addEventListener('contextmenu', (e) => e.preventDefault());
     canvas.addEventListener('pointerleave', () => setHover(null));
   }
@@ -380,7 +505,7 @@
   function pan(dx, dy) {
     const k = cam.r * 0.0016, fx = -Math.sin(cam.theta), fz = -Math.cos(cam.theta), rx = Math.cos(cam.theta), rz = -Math.sin(cam.theta);
     const mx = (-dx * rx + dy * fx) * k, mz = (-dx * rz + dy * fz) * k;
-    cam.gTarget.x = clamp(cam.gTarget.x + mx, -26, 26); cam.gTarget.z = clamp(cam.gTarget.z + mz, -22, 22);
+    cam.gTarget.x = clamp(cam.gTarget.x + mx, -26, 40); cam.gTarget.z = clamp(cam.gTarget.z + mz, -22, 22);
     cam.target.copy(cam.gTarget);
   }
 
@@ -411,6 +536,7 @@
       labelsEl.appendChild(b); units[id].pin = b;
     });
     if (selected && units[selected]) units[selected].pin.classList.add('sel');
+    Object.keys(units).forEach((k) => { if (hl.size && !hl.has(k)) units[k].pin.classList.add('dim'); });
   }
   function updatePins() {
     const w = canvas.clientWidth, h = canvas.clientHeight, v = new T.Vector3();
@@ -423,39 +549,52 @@
     });
   }
 
-  // ---------- packet trace ----------
-  const tr = { on: false, path: null, steps: [], t: 0, next: 0, mesh: null, glow: null };
-  function startTrace() {
-    if (tr.on) return;
+  // ---------- packet / power trace ----------
+  const tr = { on: false, kind: 'net', path: null, steps: [], t: 0, next: 0, mesh: null, glow: null };
+  function buildTrace(kind) {
     const y = 0.32, pts = [], marks = [];
+    const bridge = (p) => { pts.push(p); };
     function leg(list) { list.forEach((p, i) => { if (pts.length && i === 0 && pts[pts.length - 1].distanceTo(p) < 0.01) return; pts.push(p.clone()); }); }
-    const bridge = (a) => { pts.push(a); };
-    pts.push(V(0.8, 1.2, 12.5));                                        // laptop
-    marks.push({ unit: 'user', at: 0 });
-    bridge(V(0, y, 8.6)); leg(P.userCab); bridge(V(-13.4, y, 8.6)); marks.push({ unit: 'cabinet', at: pts.length - 1 });
-    bridge(V(-14.4, y, 8.6)); leg(P.cabEx); marks.push({ unit: 'exchange', at: pts.length - 1 });
-    bridge(V(0, y, -3.2)); bridge(V(0, y, -5.3)); bridge(V(-8, y, -5.3)); marks.push({ unit: 'fiber', at: pts.length - 1 });
-    bridge(V(-13, y, -5.3)); bridge(V(-13, y, -8.7)); marks.push({ unit: 'datacenter', at: pts.length - 1 });
-    bridge(V(-13.8, y, -8.7)); leg(P.dcIx); marks.push({ unit: 'ixp', at: pts.length - 1 });
-    bridge(V(-2.2, y, -9.8)); leg(P.ixSat); marks.push({ unit: 'satellite', at: pts.length - 1 });
-    bridge(V(-18.2, 3.9, -15.6)); bridge(skySat.position.clone().add(V(0, 0.4, 0)));
-    tr.path = new Path(pts);
-    tr.steps = marks.map((m) => ({ unit: m.unit, u: tr.path.cum[m.at] / tr.path.len }));
+    const mark = (unit) => marks.push({ unit: unit, at: pts.length - 1 });
+    if (kind === 'power') {
+      pts.push(V(31, 4, -8)); marks.push({ unit: 'plant', at: 0 });
+      leg(powerPaths.ov1); mark('hvsub');
+      bridge(V(26.7, 5.2, 4.5)); leg(powerPaths.ov2); mark('distsub');
+      bridge(V(17.4, y, 11)); leg(powerPaths.dsEx); mark('exchange');
+      bridge(V(6.8, y, -2.5)); leg(powerPaths.exDc); mark('datacenter');
+    } else {
+      pts.push(V(0.8, 1.2, 12.5)); marks.push({ unit: 'user', at: 0 });
+      bridge(V(0, y, 8.6)); leg(P.userCab); bridge(V(-13.4, y, 8.6)); mark('cabinet');
+      bridge(V(-14.4, y, 8.6)); leg(P.cabEx); mark('exchange');
+      bridge(V(0, y, -3.2)); bridge(V(0, y, -5.3)); bridge(V(-8, y, -5.3)); mark('fiber');
+      bridge(V(-13, y, -5.3)); bridge(V(-13, y, -8.7)); mark('datacenter');
+      bridge(V(-13.8, y, -8.7)); leg(P.dcIx); mark('ixp');
+      bridge(V(-2.2, y, -9.8)); leg(P.ixSat); mark('satellite');
+      bridge(V(-18.2, 3.9, -15.6)); bridge(skySat.position.clone().add(V(0, 0.4, 0)));
+    }
+    return { pts: pts, marks: marks };
+  }
+  function startTrace(kind) {
+    if (tr.on) return;
+    kind = kind === 'power' ? 'power' : 'net';
+    const d = buildTrace(kind); tr.kind = kind;
+    tr.path = new Path(d.pts); tr.steps = d.marks.map((m) => ({ unit: m.unit, u: tr.path.cum[m.at] / tr.path.len }));
     if (!tr.mesh) {
       tr.mesh = new T.Mesh(new T.SphereGeometry(0.55, 14, 10), new T.MeshBasicMaterial({ color: 0xffffff }));
       tr.glow = new T.Mesh(new T.SphereGeometry(0.95, 14, 10), new T.MeshBasicMaterial({ color: COL.orange, transparent: true, opacity: 0.45, depthWrite: false }));
       scene.add(tr.mesh); scene.add(tr.glow);
     }
+    tr.glow.material.color.setHex(kind === 'power' ? COL.volt : COL.orange);
     tr.mesh.visible = tr.glow.visible = true; tr.on = true; tr.t = 0; tr.next = 0; fireStep(0);
   }
-  function fireStep(i) { tr.next = i + 1; if (cbs.onTraceStep) cbs.onTraceStep(i, tr.steps[i].unit, tr.steps.length); }
+  function fireStep(i) { tr.next = i + 1; if (cbs.onTraceStep) cbs.onTraceStep(i, tr.steps[i].unit, tr.steps.length, tr.kind); }
   function stopTrace(silent) {
     if (!tr.on) return; tr.on = false; if (tr.mesh) tr.mesh.visible = tr.glow.visible = false;
     if (!silent && cbs.onTraceEnd) cbs.onTraceEnd();
   }
   function updateTrace(dt) {
     if (!tr.on) return;
-    tr.t += dt * (calm ? 3 : 6) / tr.path.len;   // 6 world-units per second
+    tr.t += dt * (calm ? 3 : 6) / tr.path.len;                 // 6 world-units per second
     const p = tr.path.at(Math.min(tr.t, 1), tr.mesh.position); tr.glow.position.copy(p);
     tr.glow.scale.setScalar(1 + 0.15 * Math.sin(clock.t * 8));
     cam.gTarget.set(p.x, 1, p.z);
@@ -476,11 +615,13 @@
     blinkers.forEach((b) => { b.m.visible = b.solo ? (Math.sin(t * 3) > -0.2) : Math.sin(t * 5 + b.ph * 7) > -0.25; });
     spinners.forEach((s) => {
       if (s.torus) { const a = t * 1.1 * speedK + s.sphere.userData.ph * TAU; s.sphere.position.set(Math.cos(a) * s.r, s.y, Math.sin(a) * s.r); }
+      else if (s.zspin) s.rotation.z = t * 1.6 * speedK;
       else if (s.rotation) s.rotation.y = t * 4 * speedK;
     });
+    plumes.forEach((p) => { const u = ((t * 0.22 * speedK) + p.off) % 1; p.m.position.set(p.base.x, p.base.y + u * 5, p.base.z); p.m.scale.setScalar(0.6 + u * 1.7); p.m.material.opacity = 0.45 * (1 - u); });
     if (skySat) skySat.position.y = 26 + Math.sin(t * 0.6) * 0.4;
     Object.keys(units).forEach((id) => {
-      const u = units[id], on = id === selected || id === hovered; u.ring.visible = on;
+      const u = units[id], on = id === selected || id === hovered || hl.has(id); u.ring.visible = on;
       if (on) { const s = id === selected ? 1 + 0.06 * Math.sin(t * 4) : 1; u.ring.scale.setScalar(s); u.ring.material.opacity = id === selected ? 0.95 : 0.55; }
     });
     updateTrace(dt); updateCamera(dt); updatePins();
@@ -491,7 +632,7 @@
     const w = canvas.clientWidth, h = canvas.clientHeight; if (!w || !h) return;
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2)); renderer.setSize(w, h, false);
     camera.aspect = w / h; camera.updateProjectionMatrix();
-    if (w < 700) cam.gR = Math.max(cam.gR, 120);
+    if (w < 700) cam.gR = Math.max(cam.gR, 135);
   }
 
   // ---------- public ----------
@@ -514,6 +655,11 @@
       registerUnit('fiber', buildFiberNode(), 3.4, 3.2);
       registerUnit('cabinet', buildCabinet(), 4, 2.4);
       registerUnit('user', buildUser(), 5.2, 4.6);
+      registerUnit('plant', buildPlant(), 17.5, 7);
+      registerUnit('hvsub', buildHvSub(), 7.4, 5.4);
+      registerUnit('distsub', buildDistSub(), 6.4, 3.9);
+      registerUnit('solar', buildSolar(), 9.6, 5.8);
+      registerUnit('sitepower', buildSitePower(), 5.4, 3.4);
       buildFillers(); buildSkySat(); defineLinks();
       buildPins(opts.names); bindInput(); resize();
       window.addEventListener('resize', resize);
@@ -530,9 +676,14 @@
     },
     relabel: function (names) { buildPins(names); },
     trace: startTrace,
+    highlight: function (ids) {
+      hl.clear(); (ids || []).forEach((i) => hl.add(i));
+      Object.keys(units).forEach((k) => { if (units[k].pin) units[k].pin.classList.toggle('dim', hl.size > 0 && !hl.has(k)); });
+    },
+    setInset: function (dx, dy) { cam.gix = dx || 0; cam.giy = dy || 0; },
     stopTrace: function () { stopTrace(); },
     isTracing: function () { return tr.on; },
-    resetView: function () { cam.gTarget.set(0, 1, 0); cam.gR = canvas.clientWidth < 700 ? 120 : 72; }
+    resetView: function () { cam.gTarget.set(7, 1, 0); cam.gR = canvas.clientWidth < 700 ? 135 : 84; }
   };
   window.City = City;
 })();

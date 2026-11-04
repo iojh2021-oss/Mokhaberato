@@ -190,6 +190,85 @@
     text(c, L('15 GHz، 20 km ≈ 10 m', '15 GHz, 20 km ≈ 10 m'), 240, 210, C.ink2, 11, 'center', 500);
   };
 
+
+  // ---------- power system ----------
+  const VOLT = '#E0A100';
+  function bolt(c, x, y, s) { c.fillStyle = VOLT; c.beginPath(); c.moveTo(x + 3 * s, y - 9 * s); c.lineTo(x - 5 * s, y + 2 * s); c.lineTo(x, y + 2 * s); c.lineTo(x - 3 * s, y + 10 * s); c.lineTo(x + 6 * s, y - 2 * s); c.lineTo(x + 1 * s, y - 2 * s); c.closePath(); c.fill(); }
+  function sine(c, x0, x1, y, amp, cycles, t, color) {
+    c.strokeStyle = color; c.lineWidth = 2; c.beginPath();
+    for (let i = 0; i <= 80; i++) { const x = lerp(x0, x1, i / 80), yy = y + Math.sin((i / 80) * cycles * TAU - t * 6) * amp; i ? c.lineTo(x, yy) : c.moveTo(x, yy); } c.stroke();
+  }
+
+  A.plant = function (c, t) {
+    const blocks = [['Compressor', 20, '#9EB0CC'], [L('احتراق', 'Combustor'), 108, '#F3B38E'], [L('توربین گاز', 'Gas turbine'), 196, '#9EB0CC'], [L('ژنراتور', 'Generator'), 300, '#F2D58A']];
+    c.strokeStyle = C.ink2; c.lineWidth = 6; c.beginPath(); c.moveTo(50, 70); c.lineTo(340, 70); c.stroke();            // shaft
+    blocks.forEach((b, i) => { const w = i === 3 ? 70 : 72; rect(c, b[1], 40, w, 60, b[2], C.ink2, 6); text(c, b[0], b[1] + w / 2, 111, C.ink, 11); });
+    for (let k = 0; k < 4; k++) { const a = t * 6 + k * TAU / 4; line(c, [[56, 70], [56 + Math.cos(a) * 18, 70 + Math.sin(a) * 22]], C.ink, 2); line(c, [[232, 70], [232 + Math.cos(a) * 18, 70 + Math.sin(a) * 22]], C.ink, 2); }
+    if (Math.sin(t * 12) > -0.3) { c.fillStyle = C.orange; c.beginPath(); c.moveTo(144, 88); c.quadraticCurveTo(138, 62, 146, 50); c.quadraticCurveTo(156, 64, 152, 88); c.fill(); }
+    text(c, L('گاز طبیعی', 'Natural gas'), 70, 22, C.ink2, 11); flow(c, [[10, 30], [108, 56]], t, 3, C.orange, 3, 0.5);
+    line(c, [[232, 100], [232, 150], [110, 150]], '#C0592B', 4); flow(c, [[232, 100], [232, 150], [110, 150]], t, 4, '#F6A07A', 3, 0.4); text(c, L('گرمای اگزوز', 'Exhaust heat'), 250, 138, '#C0592B', 11, 'left');
+    rect(c, 40, 140, 70, 50, '#CFE0F0', C.blue, 6); text(c, 'HRSG', 75, 165, C.navy, 11);
+    line(c, [[75, 190], [75, 225], [170, 225]], C.blue, 3); flow(c, [[75, 190], [75, 225], [170, 225]], t, 3, C.blue, 3, 0.4); text(c, L('بخار', 'Steam'), 40, 210, C.blue, 11);
+    rect(c, 170, 205, 80, 40, '#BBD3EC', C.blue, 6); text(c, L('توربین بخار', 'Steam turbine'), 210, 225, C.navy, 11);
+    line(c, [[250, 225], [335, 225], [335, 100]], C.ink2, 3);
+    sine(c, 360, 470, 170, 18, 2, t, VOLT); bolt(c, 415, 120, 1.4); text(c, '50 Hz · 3000 rpm', 415, 215, C.ink, 12, 'center', 700); text(c, '≈ 55–60 %', 415, 238, C.ink2, 12);
+  };
+
+  A.hvsub = function (c, t) {
+    function row(y, title, thick, volts, loss) {
+      text(c, title, 20, y - 28, C.ink, 12, 'left', 700);
+      line(c, [[30, y], [450, y]], C.steel, 3);
+      for (let i = 0; i < 8; i++) { const p = along([[30, y], [450, y]], t * 0.35 + i / 8); dot(c, p[0], p[1], thick, VOLT); }
+      for (let i = 0; i < loss; i++) { const x = 90 + i * 70, u = frac(t * 0.9 + i * 0.2); c.fillStyle = 'rgba(232,96,44,' + (0.6 * (1 - u)).toFixed(2) + ')'; c.beginPath(); c.arc(x, y - 10 - u * 22, 6 + u * 4, 0, TAU); c.fill(); }
+      text(c, volts, 450, y + 22, C.ink2, 11, 'right');
+    }
+    row(70, L('ولتاژ پایین ← جریان زیاد ← تلفات زیاد', 'Low voltage → big current → big loss'), 5.5, '20 kV · I = 20×', 5);
+    row(170, L('ولتاژ بالا ← جریان کم ← تلفات کم', 'High voltage → small current → small loss'), 2, '400 kV · I = 1×', 1);
+    text(c, 'P = √3 · V · I · cosφ', 240, 240, C.ink, 14, 'center', 800); text(c, 'Ploss = 3 · I² · R', 240, 260, C.orange, 12);
+  };
+
+  A.distsub = function (c, t) {
+    rect(c, 20, 110, 70, 50, '#C9D4E6', C.navy, 6); text(c, '63 kV', 55, 128, C.navy, 12, 'center', 700); text(c, '↓ 20 kV', 55, 146, C.ink2, 11);
+    const feeders = [[200, 40], [200, 135], [200, 230]];
+    feeders.forEach((f, i) => {
+      const pts = [[90, 135], [140, 135], [140, f[1]], [f[0], f[1]]]; line(c, pts, VOLT, 3); flow(c, pts, t + i * 0.2, 3, '#7a5600', 3, 0.35);
+      rect(c, f[0], f[1] - 12, 24, 24, '#BBC6D6', C.navy, 4); text(c, 'T', f[0] + 12, f[1], C.navy, 11, 'center', 700);
+      for (let h = 0; h < 3; h++) { const hx = 300 + h * 55, pts2 = [[f[0] + 24, f[1]], [hx, f[1]]]; line(c, pts2, '#B7871A', 1.5); house(c, hx, f[1] + 6, 0.55, ((t * 0.7 + i + h) % 3 < 2) ? '#FFF1BF' : C.white); }
+    });
+    text(c, L('فیدر 20 kV', '20 kV feeder'), 160, 18, C.ink2, 11); text(c, L('ترانس محلی ← 380/220 V', 'Local transformer → 380/220 V'), 360, 262, C.ink, 11, 'center', 600);
+  };
+
+  A.solar = function (c, t) {
+    dot(c, 60, 50, 22, C.yellow); for (let i = 0; i < 10; i++) { const a = i * TAU / 10 + t * 0.4; line(c, [[60 + Math.cos(a) * 28, 50 + Math.sin(a) * 28], [60 + Math.cos(a) * 40, 50 + Math.sin(a) * 40]], C.yellow, 2); }
+    c.save(); c.translate(120, 150); c.rotate(-0.3); rect(c, 0, 0, 90, 24, C.navy, C.steel, 2); for (let i = 1; i < 6; i++) line(c, [[i * 15, 0], [i * 15, 24]], C.blue, 1); c.restore();
+    flow(c, [[85, 80], [140, 135]], t, 3, C.yellow, 3, 0.5);
+    rect(c, 235, 120, 52, 40, C.white, C.steel, 5); text(c, 'DC→AC', 261, 140, C.ink, 11, 'center', 700);
+    line(c, [[205, 150], [235, 140]], '#B7871A', 2); line(c, [[287, 140], [330, 140]], VOLT, 3); flow(c, [[287, 140], [330, 140]], t, 3, '#7a5600', 3, 0.5); text(c, '50 Hz', 335, 140, C.ink, 11, 'left');
+    // wind
+    c.strokeStyle = C.steel; c.lineWidth = 4; c.beginPath(); c.moveTo(420, 200); c.lineTo(420, 80); c.stroke();
+    for (let k = 0; k < 3; k++) { const a = t * 2.2 + k * TAU / 3; line(c, [[420, 80], [420 + Math.cos(a) * 46, 80 + Math.sin(a) * 46]], C.ink, 3); }
+    dot(c, 420, 80, 5, C.ink); text(c, 'P = ½ρAv³Cp', 420, 218, C.ink2, 11);
+    // daily curve
+    const x0 = 40, x1 = 280, y0 = 245; line(c, [[x0, y0], [x1, y0]], C.steel, 1.5); c.strokeStyle = C.orange; c.lineWidth = 2; c.beginPath();
+    for (let i = 0; i <= 40; i++) { const u = i / 40, y = y0 - Math.max(0, Math.sin(u * Math.PI)) * 50; i ? c.lineTo(lerp(x0, x1, u), y) : c.moveTo(lerp(x0, x1, u), y); } c.stroke();
+    const u = frac(t * 0.12); dot(c, lerp(x0, x1, u), y0 - Math.sin(u * Math.PI) * 50, 4, C.ink); text(c, L('تولید خورشیدی در طول روز', 'Solar output through the day'), 160, 196, C.ink2, 11);
+  };
+
+  A.sitepower = function (c, t) {
+    const T = t % 18, grid = T < 4 || T > 14, gen = T > 9.5 && T < 14, bat = !grid && !gen;
+    const soc = T < 4 ? 1 : T < 9.5 ? 1 - (T - 4) / 5.5 * 0.55 : T < 14 ? 0.45 + (T - 9.5) / 4.5 * 0.15 : Math.min(1, 0.6 + (T - 14) / 4 * 0.4);
+    rect(c, 20, 60, 70, 44, grid ? '#D6EAD0' : '#F4C9C0', C.ink2, 6); text(c, L('برق شهر', 'Mains'), 55, 82, C.ink, 12, 'center', 700); text(c, grid ? 'OK' : L('قطع', 'OUT'), 55, 98, grid ? C.green : C.orange, 12, 'center', 800);
+    rect(c, 20, 170, 70, 44, gen ? '#F2D58A' : '#E6E0D0', C.ink2, 6); text(c, L('دیزل', 'Genset'), 55, 192, C.ink, 12, 'center', 700); text(c, T > 7.5 && T <= 9.5 ? L('استارت…', 'starting…') : gen ? 'ON' : 'OFF', 55, 207, C.ink2, 11);
+    rect(c, 150, 115, 80, 44, C.white, C.navy, 6); text(c, L('رکتیفایر', 'Rectifier'), 190, 132, C.navy, 12, 'center', 700); text(c, '→ −48 V', 190, 148, C.ink2, 11);
+    rect(c, 290, 40, 70, 90, C.white, C.navy, 6); rect(c, 298, 50 + 70 * (1 - soc), 54, 70 * soc, soc > 0.5 ? '#9FD39A' : '#F2B84B', null, 3); text(c, L('باتری', 'Battery'), 325, 28, C.navy, 12, 'center', 700); text(c, Math.round(soc * 100) + '%', 325, 85, C.ink, 13, 'center', 800);
+    rect(c, 400, 125, 66, 56, C.navy, null, 6); text(c, L('بار مخابراتی', 'Telecom load'), 433, 148, C.white, 11, 'center', 700); text(c, 'RAN / OLT', 433, 165, '#BBD3EC', 11);
+    if (grid) { line(c, [[90, 82], [150, 130]], VOLT, 3); flow(c, [[90, 82], [150, 130]], t, 3, '#7a5600', 3, 0.5); }
+    if (gen) { line(c, [[90, 192], [150, 148]], VOLT, 3); flow(c, [[90, 192], [150, 148]], t, 3, '#7a5600', 3, 0.5); }
+    if (grid || gen) { line(c, [[230, 137], [290, 100]], VOLT, 3); flow(c, [[230, 137], [290, 100]], t, 3, '#7a5600', 3, 0.5); line(c, [[230, 137], [400, 150]], VOLT, 3); flow(c, [[230, 137], [400, 150]], t, 3, '#7a5600', 3, 0.5); }
+    if (bat) { line(c, [[360, 100], [400, 140]], VOLT, 3); flow(c, [[360, 100], [400, 140]], t, 3, '#7a5600', 3, 0.5); text(c, L('باتری بار را می‌گیرد؛ بدون وقفه', 'Battery carries the load — no break'), 240, 255, C.orange, 12, 'center', 700); }
+    else text(c, gen ? L('دیزل بار را می‌دهد و باتری شارژ می‌شود', 'Generator feeds the load and recharges batteries') : L('برق شهر برقرار است', 'Mains healthy'), 240, 255, C.ink2, 12, 'center', 600);
+  };
+
   function loop(ms) {
     if (!running) return;
     const t = (ms - t0) / 1000; bg(ctx); try { A[running](ctx, t); } catch (e) { /* keep animating */ }

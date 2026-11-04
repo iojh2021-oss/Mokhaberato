@@ -4,9 +4,18 @@
 
 **EN** — An interactive 3D telecom-city simulator: laptop and phone → street cabinet → exchange → DWDM ring → data center → IXP → satellite, plus a radio lab with real link-budget math. Bilingual, no build step, ready for GitHub Pages.
 
+## What's new / تازه‌ها
+
+- **Power system (۵ واحد):** combined-cycle power plant, HV substation + pylons, distribution substation + city cables, solar & wind, and telecom-site backup power (rectifier → battery → generator). Each has a live animation; the HV substation has a *line-loss calculator* and the site-power unit a *battery-autonomy calculator*.
+- **Trace power** button: follows energy from the plant to the exchange and the data center.
+- **Report & sources** panel: the 5-layer model, actors, indicators, published figures (with city-vs-province caveats) and source links, taken from `گزارش_سیستم_مخابراتی_تهران.docx`. Layers can be highlighted in the city.
+- Bug fixes: unit labels were drawn off-screen in Persian (RTL) layout; selected unit is now centred beside the panel; mixed Persian/Latin text ordering; page no longer hangs on a blocked CDN.
+
 ## Run / اجرا
 
-Open `index.html` in a browser (internet needed once for Three.js r128 and the Vazirmatn font from CDNs).
+Open `index.html` in a browser. Three.js r128 is looked up in this order: `three.min.js` next to `index.html` → `js/vendor/three.min.js` → jsDelivr → cdnjs → unpkg. For a fully offline/unblocked setup, download it once and place it next to `index.html`.
+
+**Folders not uploading (common on phones)?** Upload only `dist/index.html` as the repo's `index.html` (plus `three.min.js`). Rebuild it with `python3 tools/build_single.py`.
 
 Deploy: push these files to the repo root → **Settings → Pages → Deploy from a branch → `main` / `(root)`**.
 
@@ -45,7 +54,8 @@ js/city.js          Three.js scene, picking, fiber/wireless links, packet tracer
 js/anim.js          per-unit explanatory canvas animations
 js/radio-core.js    pure math (no DOM) — also runs in Node
 js/radio.js         radio-lab UI (knobs, screens)
-js/app.js           wiring
+js/app.js           wiring, report panel, calculators
+tools/build_single.py  builds dist/index.html (everything inlined)
 ```
 
 Add a unit: entry in `units.js` + builder/`registerUnit` in `city.js` + `A.<id>` in `anim.js`.
@@ -53,5 +63,6 @@ Add a unit: entry in `units.js` + builder/`registerUnit` in `city.js` + `A.<id>`
 ## Honesty notes / نکات صریح
 
 - The city is a **teaching model**. Building placement is symbolic, not a map of Tehran's real sites. Specs are standards‑level figures (ITU‑T, 3GPP, IEEE, DVB); equipment lists are **industry examples**, not a claim about what is installed in Tehran.
-- Tehran‑specific network data (operators, exchange locations, data‑center sites) has **not** been researched or sourced yet. Add sourced facts to `js/units.js` before presenting them as real.
+- Tehran figures come only from the supplied report (see the *Report & sources* panel) and are labelled with their date and scope (city vs province). Power voltage levels and the 2017 capacity mix come from a CIGRE national-committee presentation (source 6, added). No site locations, cable routes or operational details are included, and the power district is symbolic.
+- The 5.7% FTTH penetration quoted in the report does not equal 225k ÷ 6.375M (≈ 3.5%); the denominator is not defined, so the app shows both without reconciling them.
 - Animations are live canvas drawings, not GIF files (lighter, language-aware, and they respect `prefers-reduced-motion`).

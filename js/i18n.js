@@ -7,12 +7,18 @@
       subtitle: 'از لپ‌تاپ تا دیتاسنتر؛ شبکه‌ی ارتباطی را روی نقشه ببینید',
       hint: 'بکشید تا بچرخد · اسکرول برای زوم · روی هر ساختمان بزنید',
       trace: 'ردیابی یک بسته',
+      tracePower: 'ردیابی برق',
+      report: 'گزارش و منابع',
+      tehranFacts: 'اعداد عمومی تهران (منبع‌دار)',
+      layersT: 'لایه‌های شبکه', actorsT: 'بازیگران و نقش‌ها', kpisT: 'شاخص‌های ارزیابی', factsT: 'اعداد منتشرشده', sourcesT: 'منابع',
+      showInCity: 'نمایش در شهر', clearHl: 'پاک‌کردن نمایش', layerShown: 'لایه',
+      calc: 'ماشین‌حساب',
       traceStop: 'توقف ردیابی',
       radio: 'آزمایشگاه رادیویی',
       lang: 'English',
       close: 'بستن',
       loading: 'در حال ساخت شهر…',
-      noGL: 'کتابخانه‌ی Three.js بارگذاری نشد (یا WebGL پشتیبانی نمی‌شود). راه‌حل: فایل three.min.js (نسخه‌ی r128) را یک بار دانلود کنید و در پوشه‌ی js/vendor/ همین پروژه بگذارید.',
+      noGL: 'کتابخانه‌ی Three.js بارگذاری نشد (یا WebGL پشتیبانی نمی‌شود). راه‌حل: فایل three.min.js (نسخه‌ی r128) را یک بار دانلود کنید و کنار index.html در ریپو آپلود کنید.',
       function: 'کارکرد',
       specs: 'مشخصات فنی',
       models: 'تجهیزات و مدل‌های نمونه',
@@ -49,12 +55,18 @@
       subtitle: 'From laptop to data center — see the communication network on a map',
       hint: 'Drag to rotate · Scroll to zoom · Click any building',
       trace: 'Trace a packet',
+      tracePower: 'Trace power',
+      report: 'Report & sources',
+      tehranFacts: 'Public Tehran figures (sourced)',
+      layersT: 'Network layers', actorsT: 'Actors & roles', kpisT: 'Evaluation indicators', factsT: 'Published figures', sourcesT: 'Sources',
+      showInCity: 'Show in city', clearHl: 'Clear', layerShown: 'Layer',
+      calc: 'Calculator',
       traceStop: 'Stop tracing',
       radio: 'Radio lab',
       lang: 'فارسی',
       close: 'Close',
       loading: 'Building the city…',
-      noGL: 'Three.js failed to load (or WebGL is unsupported). Fix: download three.min.js (r128) once and put it in this project\'s js/vendor/ folder.',
+      noGL: 'Three.js failed to load (or WebGL is unsupported). Fix: download three.min.js (r128) once and upload it next to index.html in the repo.',
       function: 'What it does',
       specs: 'Technical data',
       models: 'Equipment & example models',
@@ -87,7 +99,7 @@
     }
   };
   const HAS_FA = /[\u0600-\u06FF]/;
-  const RUN = /[A-Za-z0-9µ(≈<+−\u2011√][A-Za-z0-9µ.,:\/%+\-−\u2011–≈·×()√\u2081\u2082' ]*[A-Za-z0-9µ%)°\u2081\u2082]|[A-Za-z0-9µ°]/g;
+  const RUN = /[A-Za-z0-9µ≈<+−\u2011√\u0370-\u03FF][A-Za-z0-9µ.,:\/%+\-−\u2011–≈·×√²³\u2081\u2082\u0370-\u03FF' ]*[A-Za-z0-9µ%°²³\u2081\u2082\u0370-\u03FF]|[A-Za-z0-9µ°\u0370-\u03FF]/g;
   const I18N = {
     lang: 'fa', S: S,
     t(k) { return (S[this.lang] && S[this.lang][k]) || k; },
